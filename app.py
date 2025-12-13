@@ -152,3 +152,90 @@ else:
     c3.metric("Mañana (€)", f"{tot_m:,.2f}")
     c4.metric("Tarde (€)", f"{tot_t:,.2f}")
     c5.metric("Noche (€)", f"{tot_n:,.2f}")
+    st.divider()
+st.subheader("Comparable diario · Mismo día año anterior")
+
+if df.empty:
+    st.info("Aún no hay datos suficientes para comparaciones.")
+else:
+    # Fecha por defecto: último día con datos
+    fecha_base = df["fecha"].max().date()
+
+    fecha_sel = st.date_input(
+        "Selecciona el día a analizar",
+        value=fecha_base,
+        key="fecha_comparable"
+    )
+
+    fecha_actual = pd.to_datetime(fecha_sel)
+    fecha_anterior = fecha_actual.replace(year=fecha_actual.year - 1)
+
+    # Datos día actual
+    actual = df[df["fecha"] == fecha_actual]
+    anterior = df[df["fecha"] == fecha_anterior]
+
+    col_a, col_b, col_c = st.columns(3)
+
+    # =========================
+    # BLOQUE A · DÍA ACTUAL
+    # =========================
+    with col_a:
+        st.markdown("**Día actual**")
+
+        if actual.empty:
+            st.warning("No hay datos para este día.")
+        else:
+            r = actual.iloc[0]
+            st.write(f"Fecha: {fecha_actual.date()}")
+            st.write(f"Mañana: {r['ventas_manana_eur']:.2f} €")
+            st.write(f"Tarde: {r['ventas_tarde_eur']:.2f} €")
+            st.write(f"Noche: {r['ventas_noche_eur']:.2f} €")
+            st.write(f"**Total: {r['ventas_total_eur']:.2f} €**")
+
+    # =========================
+    # BLOQUE B · AÑO ANTERIOR
+    # =========================
+    with col_b:
+        st.markdown("**Mismo día · Año anterior**")
+
+        if anterior.empty:
+            st.warning("No existe histórico comparable.")
+        else:
+            r_prev = anterior.iloc[0]
+            st.write(f"Fecha: {fecha_anterior.date()}")
+            st.write(f"Mañana: {r_prev['ventas_manana_eur']:.2f} €")
+            st.write(f"Tarde: {r_prev['ventas_tarde_eur']:.2f} €")
+            st.write(f"Noche: {r_prev['ventas_noche_eur']:.2f} €")
+            st.write(f"**Total: {r_prev['ventas_total_eur']:.2f} €**")
+
+    # =========================
+    # BLOQUE C · VARIACIÓN
+    # =========================
+    with col_c:
+        st.markdown("**Variación**")
+
+        if actual.empty or anterior.empty:
+            st.info("No se puede calcular variación.")
+        else:
+            dif_total = r["ventas_total_eur"] - r_prev["ventas_total_eur"]
+            dif_pct = (dif_total / r_prev["ventas_total_eur"] * 100) if r_prev["ventas_total_eur"] > 0 else 0
+
+            st.metric(
+                "Total (€)",
+                f"{dif_total:+.2f} €",
+                f"{dif_pct:+.1f} %"
+            )
+
+            st.write("**Por franja:**")
+
+            for franja in ["manana", "tarde", "noche"]:
+                act = r[f"ventas_{franja}_eur"]
+                prev = r_prev[f"ventas_{franja}_eur"]
+                dif = act - prev
+                pct = (dif / prev * 100) if prev > 0 else 0
+
+                st.write(
+                    f"{franja.capitalize()}: "
+                    f"{dif:+.2f} € ({pct:+.1f} %)"
+                )
+
