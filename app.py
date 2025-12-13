@@ -4,11 +4,11 @@ from pathlib import Path
 from datetime import date
 
 # =========================
-# CONFIGURACIÓN
+# CONFIGURACIÓN GENERAL
 # =========================
 st.set_page_config(page_title="OYKEN · Ventas", layout="centered")
 st.title("OYKEN · Ventas")
-st.caption("Control diario automático · Lectura operativa")
+st.caption("Control operativo diario · Comparativa automática por patrón semanal")
 
 DATA_FILE = Path("ventas.csv")
 
@@ -74,28 +74,30 @@ if guardar:
 st.divider()
 
 # =========================
-# COMPARABLE AUTOMÁTICO POR DOW
+# COMPARABLE AUTOMÁTICO POR DOW (CORRECTO)
 # =========================
 st.subheader("Lectura automática · Comparativa por día de la semana")
 
 if df.empty:
     st.info("Aún no hay datos suficientes.")
 else:
-    # Último día registrado
+    # Día actual = último registrado
     fecha_actual = df["fecha"].max()
-    dow_actual = fecha_actual.weekday()  # lunes=0
+    dow_actual = fecha_actual.weekday()  # lunes = 0
 
-    actual = df[df["fecha"] == fecha_actual]
+    actual = df[df["fecha"] == fecha_actual].iloc[0]
 
-    # Buscar mismo DOW en año anterior
-    año_anterior = fecha_actual.year - 1
+    # Fecha objetivo: mismo día calendario, año anterior
+    fecha_objetivo = fecha_actual.replace(year=fecha_actual.year - 1)
+
+    # Candidatos: mismo DOW en el año anterior
     candidatos = df[
-        (df["fecha"].dt.year == año_anterior) &
+        (df["fecha"].dt.year == fecha_objetivo.year) &
         (df["fecha"].dt.weekday == dow_actual)
     ].copy()
 
     if not candidatos.empty:
-        candidatos["dist"] = (candidatos["fecha"] - fecha_actual).abs()
+        candidatos["dist"] = (candidatos["fecha"] - fecha_objetivo).abs()
         comparable = candidatos.sort_values("dist").iloc[0]
     else:
         comparable = None
@@ -107,12 +109,11 @@ else:
     # -------------------------
     with c1:
         st.markdown("**Día actual**")
-        r = actual.iloc[0]
         st.write(f"Fecha: {fecha_actual.strftime('%d/%m/%Y')}")
-        st.write(f"Mañana: {r['ventas_manana_eur']:.2f} €")
-        st.write(f"Tarde: {r['ventas_tarde_eur']:.2f} €")
-        st.write(f"Noche: {r['ventas_noche_eur']:.2f} €")
-        st.write(f"**Total: {r['ventas_total_eur']:.2f} €**")
+        st.write(f"Mañana: {actual['ventas_manana_eur']:.2f} €")
+        st.write(f"Tarde: {actual['ventas_tarde_eur']:.2f} €")
+        st.write(f"Noche: {actual['ventas_noche_eur']:.2f} €")
+        st.write(f"**Total: {actual['ventas_total_eur']:.2f} €**")
 
     # -------------------------
     # AÑO ANTERIOR · MISMO DOW
@@ -129,20 +130,20 @@ else:
             st.write(f"**Total: {comparable['ventas_total_eur']:.2f} €**")
 
     # -------------------------
-    # VARIACIÓN AUTOMÁTICA
+    # VARIACIÓN
     # -------------------------
     with c3:
         st.markdown("**Variación**")
         if comparable is None:
             st.info("Sin base histórica suficiente.")
         else:
-            dif = r["ventas_total_eur"] - comparable["ventas_total_eur"]
+            dif = actual["ventas_total_eur"] - comparable["ventas_total_eur"]
             pct = (dif / comparable["ventas_total_eur"] * 100) if comparable["ventas_total_eur"] > 0 else 0
 
             st.metric("Total", f"{dif:+.2f} €", f"{pct:+.1f} %")
 
             for franja in ["manana", "tarde", "noche"]:
-                act = r[f"ventas_{franja}_eur"]
+                act = actual[f"ventas_{franja}_eur"]
                 prev = comparable[f"ventas_{franja}_eur"]
                 d = act - prev
                 p = (d / prev * 100) if prev > 0 else 0
