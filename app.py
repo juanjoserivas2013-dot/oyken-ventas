@@ -23,7 +23,7 @@ MESES_ES = [
 ]
 
 # =========================
-# CARGA DE DATOS
+# CARGA DE DATOS (ÚNICA FUENTE DE VERDAD)
 # =========================
 if DATA_FILE.exists():
     df = pd.read_csv(DATA_FILE, parse_dates=["fecha"])
@@ -56,7 +56,7 @@ with st.form("form_ventas"):
     with c3:
         vn = st.number_input("Noche (€)", min_value=0.0, step=10.0)
 
-    guardar = st.form_submit_button("Guardar")
+    guardar = st.form_submit_button("Guardar venta")
 
 if guardar:
     total = vm + vt + vn
@@ -74,22 +74,24 @@ if guardar:
     df.to_csv(DATA_FILE, index=False)
 
     st.success("Venta guardada correctamente")
-    st.rerun()
+    st.rerun()  # 🔑 CLAVE: fuerza recálculo total
 
+# =========================
+# SI NO HAY DATOS, PARAMOS
+# =========================
 if df.empty:
+    st.info("Aún no hay ventas registradas.")
     st.stop()
 
 # =========================
 # PREPARACIÓN AUTOMÁTICA
 # =========================
 df = df.sort_values("fecha")
-df["dow"] = df["fecha"].dt.weekday.map(DOW_ES)
-df["mes"] = df["fecha"].dt.month
 df["año"] = df["fecha"].dt.year
+df["mes"] = df["fecha"].dt.month
+df["dia"] = df["fecha"].dt.day
+df["dow"] = df["fecha"].dt.weekday.map(DOW_ES)
 
-# =========================
-# BLOQUE 1 — HOY
-# =========================
 # =========================
 # BLOQUE 1 — HOY (CALENDARIO REAL)
 # =========================
@@ -119,9 +121,7 @@ with c1:
     st.write(f"Noche: {vn:.2f} €")
     st.markdown(f"### TOTAL HOY: {total_hoy:.2f} €")
 
-# =========================
-# COMPARATIVA HISTÓRICA DOW
-# =========================
+# --- Comparable histórico por mismo DOW ---
 fecha_obj = fecha_hoy.replace(year=fecha_hoy.year - 1)
 
 candidatos = df[
@@ -145,7 +145,7 @@ with c2:
         st.metric("Diferencia", f"{dif:+.2f} €", f"{pct:+.1f} %")
 
 # =========================
-# BLOQUE 2 — ACUMULADO MENSUAL
+# BLOQUE 2 — ACUMULADO MENSUAL AUTOMÁTICO
 # =========================
 st.divider()
 st.subheader("Resumen mensual automático")
@@ -159,7 +159,7 @@ total_mes = df_mes["ventas_total_eur"].sum()
 dias_mes = df_mes["ventas_total_eur"].gt(0).sum()
 prom_mes = total_mes / dias_mes if dias_mes else 0
 
-# Mes anterior
+# --- Mes anterior ---
 if mes_actual == 1:
     mes_ant = 12
     año_ant = año_actual - 1
@@ -193,9 +193,9 @@ with c2:
 
 with c3:
     st.markdown(f"**Diferencia · {MESES_ES[mes_actual-1]} vs {MESES_ES[mes_ant-1]}**")
-    st.metric("€", f"{dif_total:+,.2f}")
-    st.metric("Δ días", f"{dif_dias:+d}")
-    st.metric("Δ promedio", f"{dif_pct:+.1f} %")
+    st.metric("€ vs mes anterior", f"{dif_total:+,.2f}")
+    st.metric("Δ días de venta", f"{dif_dias:+d}")
+    st.metric("Δ promedio diario", f"{dif_pct:+.1f} %")
 
 # =========================
 # BLOQUE 3 — BITÁCORA DEL MES
