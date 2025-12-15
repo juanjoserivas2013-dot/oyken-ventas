@@ -106,7 +106,7 @@ df["dia"] = df["fecha"].dt.day
 df["dow"] = df["fecha"].dt.weekday.map(DOW_ES)
 
 # =========================
-# BLOQUE HOY
+# BLOQUE HOY — MICRO-UX AFINADO
 # =========================
 st.divider()
 st.subheader("HOY")
@@ -114,6 +114,7 @@ st.subheader("HOY")
 fecha_hoy = pd.to_datetime(date.today())
 dow_hoy = DOW_ES[fecha_hoy.weekday()]
 
+# --- Venta HOY ---
 venta_hoy = df[df["fecha"] == fecha_hoy]
 
 if venta_hoy.empty:
@@ -125,11 +126,16 @@ else:
     vn_h = fila["ventas_noche_eur"]
     total_h = fila["ventas_total_eur"]
 
+# --- Buscar DOW año anterior (mismo día de la semana más cercano) ---
 fecha_obj = fecha_hoy.replace(year=fecha_hoy.year - 1)
-cand = df[(df["año"] == fecha_obj.year) & (df["fecha"].dt.weekday == fecha_hoy.weekday())]
+
+cand = df[
+    (df["año"] == fecha_obj.year) &
+    (df["fecha"].dt.weekday == fecha_hoy.weekday())
+]
 
 if cand.empty:
-    fecha_a_txt = "Sin histórico comparable"
+    fecha_a_txt = "Sin histórico comparable (aún)"
     vm_a = vt_a = vn_a = total_a = 0.0
 else:
     cand = cand.copy()
@@ -143,7 +149,7 @@ else:
     total_a = comp["ventas_total_eur"]
 
 # =========================
-# VARIACIONES
+# CÁLCULOS DE VARIACIÓN
 # =========================
 def diff_and_pct(actual, base):
     diff = actual - base
@@ -175,37 +181,80 @@ d_vn, p_vn = diff_and_pct(vn_h, vn_a)
 d_tot, p_tot = diff_and_pct(total_h, total_a)
 
 # =========================
-# VISUAL
+# DISPOSICIÓN VISUAL — HOY
 # =========================
 c1, c2, c3 = st.columns(3)
 
+# --- COLUMNA HOY ---
 with c1:
     st.markdown("**HOY**")
     st.caption(f"{dow_hoy} · {fecha_hoy.strftime('%d/%m/%Y')}")
-    st.write(f"Mañana: {vm_h:.2f} €")
-    st.write(f"Tarde: {vt_h:.2f} €")
-    st.write(f"Noche: {vn_h:.2f} €")
-    st.markdown(f"### TOTAL HOY\n{total_h:.2f} €")
 
+    st.write("**Mañana**")
+    st.write(f"{vm_h:,.2f} €")
+
+    st.write("**Tarde**")
+    st.write(f"{vt_h:,.2f} €")
+
+    st.write("**Noche**")
+    st.write(f"{vn_h:,.2f} €")
+
+    st.markdown("---")
+    st.markdown(f"### TOTAL HOY\n{total_h:,.2f} €")
+
+# --- COLUMNA DOW ---
 with c2:
     st.markdown("**DOW (Año anterior)**")
     st.caption(fecha_a_txt)
-    st.write(f"Mañana: {vm_a:.2f} €")
-    st.write(f"Tarde: {vt_a:.2f} €")
-    st.write(f"Noche: {vn_a:.2f} €")
-    st.markdown(f"### TOTAL DOW\n{total_a:.2f} €")
 
+    st.write("**Mañana**")
+    st.write(f"{vm_a:,.2f} €")
+
+    st.write("**Tarde**")
+    st.write(f"{vt_a:,.2f} €")
+
+    st.write("**Noche**")
+    st.write(f"{vn_a:,.2f} €")
+
+    st.markdown("---")
+    st.markdown(f"### TOTAL DOW\n{total_a:,.2f} €")
+
+# --- COLUMNA VARIACIÓN ---
 with c3:
     st.markdown("**VARIACIÓN**")
     st.caption("Vs. DOW año anterior")
 
-    st.markdown(f"Mañana {d_vm:+.2f} € ({p_vm:+.1f}%) {icono_variacion(p_vm)}")
-    st.markdown(f"Tarde {d_vt:+.2f} € ({p_vt:+.1f}%) {icono_variacion(p_vt)}")
-    st.markdown(f"Noche {d_vn:+.2f} € ({p_vn:+.1f}%) {icono_variacion(p_vn)}")
+    st.markdown(
+        f"**Mañana**  "
+        f"<span style='color:{color(d_vm)}'>"
+        f"{d_vm:+,.2f} € ({p_vm:+.1f}%) {icono_variacion(p_vm)}"
+        f"</span>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"**Tarde**  "
+        f"<span style='color:{color(d_vt)}'>"
+        f"{d_vt:+,.2f} € ({p_vt:+.1f}%) {icono_variacion(p_vt)}"
+        f"</span>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"**Noche**  "
+        f"<span style='color:{color(d_vn)}'>"
+        f"{d_vn:+,.2f} € ({p_vn:+.1f}%) {icono_variacion(p_vn)}"
+        f"</span>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown("---")
 
     st.markdown(
         f"### TOTAL "
-        f"<span style='color:{color(d_tot)}'>{d_tot:+.2f} € ({p_tot:+.1f}%)</span>",
+        f"<span style='color:{color(d_tot)}'>"
+        f"{d_tot:+,.2f} € ({p_tot:+.1f}%)"
+        f"</span>",
         unsafe_allow_html=True
     )
 
