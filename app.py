@@ -206,24 +206,39 @@ st.text_area(
 )
 
 # =========================
-# BITÁCORA DEL MES
+# BLOQUE 3 — BITÁCORA DEL MES
 # =========================
 st.divider()
 st.subheader("Ventas del mes (bitácora viva)")
 
-df_mes = df[(df["mes"] == fecha_hoy.month) & (df["año"] == fecha_hoy.year)].copy()
-df_mes["fecha"] = df_mes["fecha"].dt.strftime("%d-%m-%Y")
+# Filtrar mes y año actual
+df_mes = df[
+    (df["mes"] == fecha_hoy.month) &
+    (df["año"] == fecha_hoy.year)
+].copy()
 
+# Formato visual de fecha + icono 👁️ si hay observaciones
+df_mes["fecha_display"] = df_mes["fecha"].dt.strftime("%d-%m-%Y")
+df_mes["fecha_display"] = df_mes.apply(
+    lambda r: f"{r['fecha_display']} 👁️"
+    if str(r["observaciones"]).strip()
+    else r["fecha_display"],
+    axis=1
+)
+
+# Mostrar tabla
 st.dataframe(
     df_mes[[
-        "fecha",
+        "fecha_display",
         "dow",
         "ventas_manana_eur",
         "ventas_tarde_eur",
         "ventas_noche_eur",
         "ventas_total_eur",
         "observaciones"
-    ]],
+    ]].rename(columns={
+        "fecha_display": "fecha"
+    }),
     hide_index=True,
     use_container_width=True
 )
