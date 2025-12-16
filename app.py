@@ -337,7 +337,7 @@ with c3:
 
     st.markdown("---")
     st.markdown(
-        f"<span style='color:{color(d_tot)}'>### TOTAL {d_tot:+,.2f} € ({p_tot:+.1f}%)</span>",
+        f"<span style='color:{color(d_tot)}'>TOTAL {d_tot:+,.2f} € ({p_tot:+.1f}%)</span>",
         unsafe_allow_html=True
     )
     st.caption(f"Ticket medio: {d_tmed_tot:+.2f} € ({p_tmed_tot:+.1f}%) {icono(p_tmed_tot)}")
