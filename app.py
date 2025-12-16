@@ -258,13 +258,14 @@ with c2:
     st.markdown("---")
     st.markdown(f"### TOTAL DOW\n{total_a:,.2f} €")
 
-# VARIACIÓN (ÚNICO CAMBIO APLICADO AQUÍ)
+# VARIACIÓN 
 with c3:
     st.markdown("**VARIACIÓN**")
     st.caption("Vs. DOW año anterior")
 
+    # MAÑANA
+    st.write("**Mañana**")
     st.markdown(
-        f"**Mañana** "
         f"<span style='color:{color(d_vm)}'>"
         f"{d_vm:+,.2f} € ({p_vm:+.1f}%) {icono(p_vm)}"
         f"</span>",
@@ -272,8 +273,9 @@ with c3:
     )
     st.caption(f"{cm_h} comensales · {tm_h} tickets")
 
+    # TARDE
+    st.write("**Tarde**")
     st.markdown(
-        f"**Tarde** "
         f"<span style='color:{color(d_vt)}'>"
         f"{d_vt:+,.2f} € ({p_vt:+.1f}%) {icono(p_vt)}"
         f"</span>",
@@ -281,8 +283,9 @@ with c3:
     )
     st.caption(f"{ct_h} comensales · {tt_h} tickets")
 
+    # NOCHE
+    st.write("**Noche**")
     st.markdown(
-        f"**Noche** "
         f"<span style='color:{color(d_vn)}'>"
         f"{d_vn:+,.2f} € ({p_vn:+.1f}%) {icono(p_vn)}"
         f"</span>",
@@ -291,13 +294,14 @@ with c3:
     st.caption(f"{cn_h} comensales · {tn_h} tickets")
 
     st.markdown("---")
+    st.write("**TOTAL**")
     st.markdown(
-        f"### TOTAL "
         f"<span style='color:{color(d_tot)}'>"
         f"{d_tot:+,.2f} € ({p_tot:+.1f}%)"
         f"</span>",
         unsafe_allow_html=True
     )
+
 
 # =========================
 # BITÁCORA DEL MES
