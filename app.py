@@ -271,7 +271,7 @@ with c3:
         f"</span>",
         unsafe_allow_html=True
     )
-    st.caption(f"{cm_h} comensales · {tm_h} tickets")
+    st.caption(f"{(cm_h - cm_a):+} comensales · {(tm_h - tm_a):+} tickets")
 
     # TARDE
     st.write("**Tarde**")
@@ -281,7 +281,7 @@ with c3:
         f"</span>",
         unsafe_allow_html=True
     )
-    st.caption(f"{ct_h} comensales · {tt_h} tickets")
+    st.caption(f"{(ct_h - ct_a):+} comensales · {(tt_h - tt_a):+} tickets")
 
     # NOCHE
     st.write("**Noche**")
@@ -291,9 +291,11 @@ with c3:
         f"</span>",
         unsafe_allow_html=True
     )
-    st.caption(f"{cn_h} comensales · {tn_h} tickets")
+    st.caption(f"{(cn_h - cn_a):+} comensales · {(tn_h - tn_a):+} tickets")
 
     st.markdown("---")
+
+    # TOTAL
     st.write("**TOTAL**")
     st.markdown(
         f"<span style='color:{color(d_tot)}'>"
@@ -301,7 +303,10 @@ with c3:
         f"</span>",
         unsafe_allow_html=True
     )
-
+    st.caption(
+        f"{(cm_h + ct_h + cn_h - cm_a - ct_a - cn_a):+} comensales · "
+        f"{(tm_h + tt_h + tn_h - tm_a - tt_a - tn_a):+} tickets"
+    )
 
 # =========================
 # BITÁCORA DEL MES
