@@ -125,7 +125,6 @@ if seccion == "Registro diario":
 
     if df.empty:
         st.info("Aún no hay ventas registradas.")
-        st.stop()
 
     # =========================
     # PREPARACIÓN ISO
