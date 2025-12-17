@@ -11,13 +11,16 @@ st.set_page_config(page_title="OYKEN · Control Operativo", layout="centered")
 menu = st.sidebar.selectbox(
     "Menú",
     [
-        "Libro de Registro Diario",
+        "Control Operativo",
         "Comportamiento",
         "Tendencia",
         "Calidad Operativa"
     ]
 )
-if menu == "Libro de Registro Diario":
+
+if menu == "Control Operativo":
+
+
 
 st.title("OYKEN · Control Operativo")
 st.markdown("**Entra en Oyken. En 30 segundos entiendes mejor tu negocio.**")
