@@ -57,6 +57,9 @@ df_15 = df[df["fecha"] <= hoy].tail(15)
 # 1. DIRECCIÓN DEL NEGOCIO
 # =========================
 st.subheader("Dirección del negocio")
+if len(df_semana) >= 1:
+    st.caption(f"Periodo analizado: {rango_fechas(df_semana)}")
+
 
 if len(df_semana) >= 5:
     mm_actual = df_semana["ventas_total_eur"].mean()
@@ -82,6 +85,9 @@ st.divider()
 # 2. CONSISTENCIA DEL RESULTADO
 # =========================
 st.subheader("Consistencia del resultado")
+if len(df_7) >= 1:
+    st.caption(f"Periodo analizado: {rango_fechas(df_7)}")
+
 
 if len(df_7) >= 7:
     cv_ventas = df_7["ventas_total_eur"].std() / df_7["ventas_total_eur"].mean()
@@ -99,6 +105,9 @@ st.divider()
 # 3. DÍAS FUERTES Y DÉBILES
 # =========================
 st.subheader("Días fuertes y días débiles")
+if len(df_15) >= 1:
+    st.caption(f"Periodo analizado: {rango_fechas(df_15)}")
+
 
 if len(df_15) >= 15:
     df_15["weekday"] = df_15["fecha"].dt.day_name()
@@ -130,6 +139,9 @@ st.divider()
 # 4. ESTABILIDAD DEL TICKET MEDIO
 # =========================
 st.subheader("Estabilidad del ticket medio")
+if len(df_7) >= 1:
+    st.caption(f"Periodo analizado: {rango_fechas(df_7)}")
+
 
 if len(df_7) >= 7:
     cv_ticket = df_7["ticket_medio"].std() / df_7["ticket_medio"].mean()
@@ -147,6 +159,9 @@ st.divider()
 # 5. VOLATILIDAD POR TURNOS
 # =========================
 st.subheader("Volatilidad por turnos")
+if len(df_7) >= 1:
+    st.caption(f"Periodo analizado: {rango_fechas(df_7)}")
+
 
 def cv_turno(ventas, tickets):
     tm = np.where(tickets > 0, ventas / tickets, np.nan)
@@ -172,6 +187,9 @@ st.divider()
 # 6. DEPENDENCIA DE PICOS
 # =========================
 st.subheader("Dependencia de picos")
+if len(df_10) >= 1:
+    st.caption(f"Periodo analizado: {rango_fechas(df_10)}")
+
 
 if len(df_10) >= 10:
     media = df_10["ventas_total_eur"].mean()
