@@ -46,3 +46,4 @@ elif dominio == "Ventas":
     elif submodulo == "Comportamiento":
         from ventas_comportamiento import ventas_comportamiento_page
         ventas_comportamiento_page()
+
