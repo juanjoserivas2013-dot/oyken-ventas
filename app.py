@@ -16,7 +16,7 @@ with st.sidebar:
     st.markdown("### Ventas")
     st.markdown(
         "<span style='color:#666;'>"
-        "Análisis operativo, comportamiento y comparables"
+        "Análisis operativo, Comportamiento, Tendencia y comparables"
         "</span>",
         unsafe_allow_html=True
     )
