@@ -7,6 +7,8 @@ from datetime import date
 # CONFIGURACIÓN
 # =========================
 
+st.set_page_config(page_title="OYKEN · Compras", layout="centered")
+
 st.title("OYKEN · Compras")
 st.markdown("**Registro operativo diario del coste real del negocio**")
 st.caption("Este módulo no analiza. Captura la verdad económica.")
