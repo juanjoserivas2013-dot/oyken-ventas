@@ -1,6 +1,6 @@
-import stremlit as st
+import streamlit as st
 
 st.title("OYKEN - Ventas - Prueba")
 st.caption("Pagina de Prueba")
 
-st.succes("existe.")
+st.success("existe.")
