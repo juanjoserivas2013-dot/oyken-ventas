@@ -41,6 +41,7 @@ CATEGORIAS = [
     "Uniformes y utensilios",
     "Vigilancia y Seguridad",
     "otros Gastos operativos"
+    
 ]
 
 # =====================================================
