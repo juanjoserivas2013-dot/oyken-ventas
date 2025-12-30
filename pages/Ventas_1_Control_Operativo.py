@@ -131,7 +131,13 @@ st.subheader("HOY")
 fecha_hoy = pd.to_datetime(date.today())
 iso_hoy = fecha_hoy.isocalendar()
 
-venta_hoy = df[df["fecha"] == fecha_hoy]
+inicio_dia = fecha_hoy.normalize()
+fin_dia = inicio_dia + pd.Timedelta(days=1)
+
+venta_hoy = df[
+    (df["fecha"] >= inicio_dia) &
+    (df["fecha"] < fin_dia)
+]
 
 def fila_o_cero(col):
     return fila[col] if not venta_hoy.empty else 0
