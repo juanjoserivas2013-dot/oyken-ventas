@@ -1,29 +1,46 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
+from datetime import datetime
 
-st.title("Cuenta de Resultados")
+# =========================
+# CONFIGURACIÓN
+# =========================
+st.title("OYKEN · Cuenta de Resultados")
+st.caption("Lectura automática desde bases mensuales")
 
 DATA = Path("data")
 
 # =========================
-# SELECTORES
+# SELECTOR DE PERIODO
 # =========================
-col1, col2 = st.columns(2)
+hoy = datetime.today()
 
-with col1:
-    anio = st.selectbox("Año", [2024, 2025, 2026], index=1)
+MESES = {
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+}
 
-with col2:
-    meses = {
-        1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
-        5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
-        9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
-    }
-    mes = st.selectbox("Mes", list(meses.keys()), format_func=lambda x: meses[x])
+mes_num = st.selectbox(
+    "Mes",
+    list(MESES.keys()),
+    index=hoy.month - 1,
+    format_func=lambda x: MESES[x]
+)
+
+anio = st.selectbox(
+    "Año",
+    [hoy.year - 1, hoy.year],
+    index=1
+)
+
+mes = MESES[mes_num]
+
+st.divider()
 
 # =========================
-# FUNCIÓN LECTURA MENSUAL
+# FUNCIÓN LECTURA BASE
 # =========================
 def leer_total(path, anio, mes):
     if not path.exists():
@@ -31,12 +48,14 @@ def leer_total(path, anio, mes):
 
     df = pd.read_csv(path)
 
-    if {"anio", "mes", "total"}.issubset(df.columns):
-        fila = df[(df["anio"] == anio) & (df["mes"] == mes)]
-        if not fila.empty:
-            return float(fila["total"].sum())
+    fila = df[(df["anio"] == anio) & (df["mes"] == mes)]
+    if not fila.empty:
+        return float(fila["total"].sum())
 
     return 0.0
+
+def euro(valor):
+    return f"{valor:,.2f} €"
 
 # =========================
 # LECTURA DE TOTALES
@@ -51,23 +70,47 @@ gastos = leer_total(DATA / "gastos_mensuales.csv", anio, mes)
 # =========================
 # CUENTA DE RESULTADOS
 # =========================
+st.subheader(f"Resultado {mes} {anio}")
 st.divider()
-st.subheader(f"Resultado {meses[mes]} {anio}")
 
-st.write("Ventas netas", f"{ventas:,.2f} €")
-st.write("Compras", f"-{compras:,.2f} €")
-st.write("Variación inventario", f"{inventario:,.2f} €")
-st.write("Mermas", f"-{mermas:,.2f} €")
-
-margen_bruto = ventas - compras + inventario - mermas
-
-st.markdown(f"### **MARGEN BRUTO**  \n**{margen_bruto:,.2f} €**")
-
+# INGRESOS
+st.subheader("INGRESOS")
+st.write("Ventas netas:", euro(ventas))
 st.divider()
-st.write("RRHH", f"-{rrhh:,.2f} €")
-st.write("Gastos operativos", f"-{gastos:,.2f} €")
 
-ebitda = margen_bruto - rrhh - gastos
+# COSTE DE VENTAS
+st.subheader("COSTE DE VENTAS")
+st.write("Compras:", euro(compras))
+st.write("Variación de inventario:", euro(inventario))
+st.write("Mermas:", euro(mermas))
 
+coste_ventas = compras + inventario + mermas
+st.write("Coste de ventas total:", euro(coste_ventas))
 st.divider()
-st.markdown(f"### **EBITDA**  \n**{ebitda:,.2f} €**")
+
+# MARGEN BRUTO
+margen_bruto = ventas - coste_ventas
+margen_pct = (margen_bruto / ventas * 100) if ventas > 0 else 0
+
+st.subheader("MARGEN BRUTO")
+st.write("Margen bruto €:", euro(margen_bruto))
+st.write("Margen bruto %:", f"{margen_pct:.2f} %")
+st.divider()
+
+# COSTE DE PERSONAL
+st.subheader("COSTE DE PERSONAL")
+st.write("RRHH:", euro(rrhh))
+st.divider()
+
+# GASTOS OPERATIVOS
+st.subheader("GASTOS OPERATIVOS")
+st.write("Gastos generales:", euro(gastos))
+st.divider()
+
+# RESULTADO OPERATIVO
+resultado_operativo = margen_bruto - rrhh - gastos
+resultado_pct = (resultado_operativo / ventas * 100) if ventas > 0 else 0
+
+st.subheader("RESULTADO OPERATIVO")
+st.write("Resultado operativo €:", euro(resultado_operativo))
+st.write("Resultado operativo %:", f"{resultado_pct:.2f} %")
