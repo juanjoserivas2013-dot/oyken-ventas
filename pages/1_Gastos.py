@@ -141,3 +141,54 @@ if st.button("Eliminar gasto"):
     )
     st.session_state.gastos.to_csv(DATA_FILE, index=False)
     st.success("Gasto eliminado correctamente.")
+# =====================================================
+# BASE CUENTA DE RESULTADOS – GASTOS MENSUALES
+# =====================================================
+
+st.divider()
+st.subheader("Base Cuenta de Resultados — Gastos mensuales")
+
+df = st.session_state.gastos.copy()
+
+if df.empty:
+    st.info("No hay datos suficientes para generar la base mensual.")
+else:
+    # Normalizamos columna Mes
+    df["Mes"] = df["Mes"].astype(str)
+
+    # Agrupamos por mes
+    gastos_mensuales = (
+        df.groupby("Mes", as_index=False)["Coste (€)"]
+        .sum()
+        .rename(columns={"Coste (€)": "Gasto mensual (€)"})
+    )
+
+    # Generamos estructura Enero–Diciembre
+    year = sorted(df["Mes"].str[:4].unique())[-1]
+    meses = [f"{year}-{str(m).zfill(2)}" for m in range(1, 13)]
+
+    base_resultados = pd.DataFrame({"Mes": meses})
+
+    base_resultados = base_resultados.merge(
+        gastos_mensuales,
+        on="Mes",
+        how="left"
+    ).fillna(0)
+
+    # Total anual
+    total_anual = base_resultados["Gasto mensual (€)"].sum()
+
+    st.dataframe(
+        base_resultados,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.markdown(
+        f"### Total anual gastos: **{total_anual:,.2f} €**"
+    )
+
+    # 👉 Esta tabla es la que leerá Cuenta de Resultados
+    st.caption(
+        "Esta tabla es la base oficial que utiliza la Cuenta de Resultados."
+    )
