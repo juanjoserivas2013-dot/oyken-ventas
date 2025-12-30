@@ -13,7 +13,7 @@ st.caption("Aquí se captura la estructura fija y variable del negocio.")
 # =====================================================
 # ARCHIVO DE DATOS
 # =====================================================
-DATA_FILE = Path("gastos.csv"
+DATA_FILE = Path("gastos.csv")
 
 # =====================================================
 # ESTADO
