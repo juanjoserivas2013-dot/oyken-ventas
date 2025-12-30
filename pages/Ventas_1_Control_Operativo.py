@@ -427,48 +427,50 @@ with c2:
 with c3:
     st.metric("Ticket medio mes", f"{ticket_medio_mes:,.2f} €")
 
-# =====================================================
-# BASE CUENTA DE RESULTADOS — VENTAS MENSUALES
-# =====================================================
+# =========================
+# BASE CUENTA DE RESULTADOS – VENTAS MENSUALES
+# =========================
 
 st.divider()
-st.subheader("Base Cuenta de Resultados — Ventas mensuales")
+st.subheader("Base Cuenta de Resultados – Ventas mensuales")
 
-# Ruta estándar OYKEN
-PATH_VENTAS = Path("data/ventas_mensuales.csv")
+# Aseguramos columna fecha en datetime
+df["fecha"] = pd.to_datetime(df["fecha"])
 
-# Actualizamos automáticamente el mes que se está viendo
-actualizar_mes(
-    PATH_VENTAS,
-    anio_seleccionado,
-    mes_seleccionado,
-    total_mes_actual
+# Agrupación mensual
+ventas_mensuales = (
+    df
+    .assign(
+        año=df["fecha"].dt.year,
+        mes=df["fecha"].dt.month
+    )
+    .groupby(["año", "mes"], as_index=False)
+    .agg(
+        ventas_mes=("ventas_total_eur", "sum")
+    )
 )
 
-# Leemos la tabla anual completa
-df_ventas_anual = leer_tabla_anual(PATH_VENTAS, anio_seleccionado)
+# Tabla 12 meses para el año seleccionado
+año_actual = fecha_hoy.year
 
-# Preparación visual (NO afecta a datos)
-MESES_TXT = {
+tabla_resultado = (
+    ventas_mensuales[ventas_mensuales["año"] == año_actual]
+    .set_index("mes")
+    .reindex(range(1, 13), fill_value=0)
+    .reset_index()
+)
+
+tabla_resultado["Mes"] = tabla_resultado["mes"].map({
     1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
     5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
     9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
-}
+})
 
-df_ventas_display = df_ventas_anual.copy()
-df_ventas_display["Mes"] = df_ventas_display["mes"].map(MESES_TXT)
-df_ventas_display = df_ventas_display.rename(
-    columns={"total": "Total ventas (€)"}
-)[["Mes", "Total ventas (€)"]]
+tabla_resultado = tabla_resultado[["Mes", "ventas_mes"]]
+tabla_resultado = tabla_resultado.rename(columns={"ventas_mes": "Ventas (€)"})
 
-# Fila TOTAL (visual)
-total_anual = df_ventas_display["Total ventas (€)"].sum()
-df_ventas_display.loc[len(df_ventas_display)] = ["TOTAL", total_anual]
-
-# Mostrar tabla
 st.dataframe(
-    df_ventas_display,
-    hide_index=True,
-    use_container_width=True
+    tabla_resultado,
+    use_container_width=True,
+    hide_index=True
 )
-
