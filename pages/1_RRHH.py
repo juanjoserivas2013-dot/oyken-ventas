@@ -7,7 +7,7 @@ from pathlib import Path
 # =====================================================
 
 st.title("OYKEN · RRHH")
-st.caption("Gestión estructural de costes de personal")
+st.caption("Planificación estructural de personal")
 
 # =====================================================
 # CONSTANTES
@@ -19,41 +19,54 @@ MESES = [
 ]
 
 SS_EMPRESA = 0.33
-EXPORT_FILE = Path("rrhh_coste_mensual.csv")
+PUESTOS_FILE = Path("rrhh_puestos.csv")
 
 # =====================================================
-# ESTADO GLOBAL (AÑO ACTIVO + PUESTOS)
+# UTILIDADES DE PERSISTENCIA
 # =====================================================
 
-if "anio_rrhh" not in st.session_state:
-    st.session_state.anio_rrhh = 2025
+def cargar_puestos():
+    if PUESTOS_FILE.exists():
+        return pd.read_csv(PUESTOS_FILE)
+    return pd.DataFrame(columns=["Año", "Puesto", "Bruto anual (€)", *MESES])
 
-if "puestos" not in st.session_state:
-    st.session_state.puestos = []
+def guardar_puesto(registro: dict):
+    df = cargar_puestos()
+    df = pd.concat([df, pd.DataFrame([registro])], ignore_index=True)
+    df.to_csv(PUESTOS_FILE, index=False)
 
 # =====================================================
-# BLOQUE 1 · ALTA DE PUESTOS (AÑO AQUÍ)
+# CONTEXTO DE PLANIFICACIÓN
+# =====================================================
+
+anio_activo = st.selectbox(
+    "Año activo",
+    list(range(2022, 2031)),
+    index=list(range(2022, 2031)).index(2025)
+)
+
+df_puestos = cargar_puestos()
+df_puestos_anio = df_puestos[df_puestos["Año"] == anio_activo]
+
+st.divider()
+
+# =====================================================
+# BLOQUE 1 · ALTA DE PUESTOS
 # =====================================================
 
 st.subheader("Alta de puestos")
-
-st.session_state.anio_rrhh = st.selectbox(
-    "Año de planificación",
-    list(range(2022, 2031)),
-    index=list(range(2022, 2031)).index(st.session_state.anio_rrhh)
-)
 
 with st.form("alta_puesto", clear_on_submit=True):
 
     puesto = st.text_input("Puesto")
     bruto_anual = st.number_input(
-        "Salario bruto anual (€)",
+        "Salario bruto anual por persona (€)",
         min_value=0.0,
         step=1000.0,
         format="%.2f"
     )
 
-    st.markdown("**Necesidad mensual (personas)**")
+    st.markdown("**Necesidad mensual del puesto (personas)**")
     cols = st.columns(6)
     necesidad = {}
 
@@ -69,24 +82,21 @@ with st.form("alta_puesto", clear_on_submit=True):
     guardar = st.form_submit_button("Guardar puesto")
 
     if guardar and puesto.strip():
-        st.session_state.puestos.append({
-            "Año": st.session_state.anio_rrhh,
+        registro = {
+            "Año": anio_activo,
             "Puesto": puesto.strip(),
             "Bruto anual (€)": float(bruto_anual),
             **necesidad
-        })
+        }
+        guardar_puesto(registro)
+        st.success(f"Puesto '{puesto}' guardado para {anio_activo}")
+        st.experimental_rerun()
 
 # =====================================================
-# TABLA · ESTRUCTURA DE PUESTOS (AÑO ACTIVO)
+# TABLA · ESTRUCTURA DE PUESTOS
 # =====================================================
 
-df_puestos = pd.DataFrame(st.session_state.puestos)
-
-df_puestos_anio = df_puestos[
-    df_puestos["Año"] == st.session_state.anio_rrhh
-] if not df_puestos.empty else pd.DataFrame()
-
-st.subheader("Estructura de puestos")
+st.subheader(f"Estructura de puestos — {anio_activo}")
 
 if not df_puestos_anio.empty:
     st.dataframe(
@@ -131,10 +141,7 @@ st.divider()
 
 st.subheader("Seguridad Social y coste empresarial")
 
-aplicar_ss = st.checkbox(
-    "Aplicar Seguridad Social Empresa (33%)",
-    value=True
-)
+aplicar_ss = st.checkbox("Aplicar Seguridad Social Empresa (33%)", value=True)
 
 costes = []
 
@@ -184,21 +191,6 @@ df_totales = pd.DataFrame(totales)
 
 st.dataframe(df_totales, hide_index=True, use_container_width=True)
 
-st.divider()
-
-# =====================================================
-# BLOQUE 5 · PERSISTENCIA (HEREDA AÑO ACTIVO)
-# =====================================================
-
-st.subheader("Guardar RRHH")
-
-df_export = df_totales.copy()
-df_export.insert(0, "Año", st.session_state.anio_rrhh)
-
-df_export.to_csv(EXPORT_FILE, index=False)
-
-st.success(
-    f"Coste de RRHH del año {st.session_state.anio_rrhh} guardado correctamente"
+st.caption(
+    "Este consolidado alimenta directamente la Cuenta de Resultados."
 )
-
-st.caption("Este coste se integra directamente en la Cuenta de Resultados.")
