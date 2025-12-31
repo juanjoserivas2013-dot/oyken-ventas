@@ -5,26 +5,38 @@ from pathlib import Path
 # =========================
 # CONFIGURACIÓN DE PÁGINA
 # =========================
+st.set_page_config(page_title="OYKEN · Totales Operativos", layout="centered")
 
 st.title("OYKEN · Totales Operativos")
 st.caption("Consolidado mensual de magnitudes económicas operativas")
 
 # =========================
-# FUENTE DE DATOS
+# FUENTES DE DATOS
 # =========================
-DATA_FILE = Path("totales_operativos.csv")
+DATA_FILE = Path("totales_operativos.csv")                 # Compras, Gastos, RRHH, Inventario
+VENTAS_FILE = Path("ventas_mensuales_consolidadas.csv")   # Ventas desde Control Operativo
 
-if not DATA_FILE.exists():
+dfs = []
+
+if DATA_FILE.exists():
+    dfs.append(pd.read_csv(DATA_FILE))
+
+if VENTAS_FILE.exists():
+    dfs.append(pd.read_csv(VENTAS_FILE))
+
+if not dfs:
     st.warning("No existen datos en Totales Operativos.")
     st.stop()
 
-df = pd.read_csv(DATA_FILE)
+df = pd.concat(dfs, ignore_index=True)
 
 if df.empty:
     st.info("Totales Operativos no contiene registros.")
     st.stop()
 
-# Normalizar tipos
+# =========================
+# NORMALIZAR TIPOS
+# =========================
 df["anio"] = df["anio"].astype(int)
 df["mes"] = df["mes"].astype(int)
 df["importe_eur"] = df["importe_eur"].astype(float)
@@ -41,7 +53,6 @@ df_anio = df[df["anio"] == anio_sel].copy()
 # ESTADO DE COBERTURA
 # =========================
 st.divider()
-
 st.markdown("**Estado de cobertura**")
 
 MODULOS = [
@@ -49,7 +60,7 @@ MODULOS = [
     "Compras",
     "Gastos",
     "RRHH",
-    "Inventario",
+    "Inventario"
 ]
 
 cobertura = []
@@ -83,11 +94,10 @@ with c2:
     )
 
 with c3:
-    meses_disp = sorted(df_anio["mes"].unique())
     mes_sel = st.multiselect(
         "Mes",
-        meses_disp,
-        default=meses_disp
+        sorted(df_anio["mes"].unique()),
+        default=sorted(df_anio["mes"].unique())
     )
 
 df_filtro = df_anio[
@@ -101,7 +111,6 @@ df_filtro = df_anio[
 # =========================
 st.divider()
 
-# Mes en texto
 MESES_TXT = {
     1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
     5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
@@ -127,12 +136,3 @@ st.dataframe(
     hide_index=True,
     use_container_width=True
 )
-
-# =========================
-# NOTA DE SISTEMA
-# =========================
-st.caption(
-    "Esta página consolida totales mensuales. "
-    "No calcula resultados ni aplica criterios financieros."
-)
-
