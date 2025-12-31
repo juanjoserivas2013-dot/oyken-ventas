@@ -437,7 +437,6 @@ with c3:
 st.divider()
 st.subheader("Ventas mensuales · Resumen anual")
 
-# Selector de año (independiente)
 anio_resumen = st.selectbox(
     "Año",
     options=sorted(df["fecha"].dt.year.unique()),
@@ -445,33 +444,30 @@ anio_resumen = st.selectbox(
     key="anio_resumen_ventas"
 )
 
-# Agrupación mensual
 ventas_mensuales = (
     df[df["fecha"].dt.year == anio_resumen]
-    .assign(mes=df["fecha"].dt.month)
+    .assign(mes=lambda x: x["fecha"].dt.month)
     .groupby("mes", as_index=False)
     .agg(ventas_mes=("ventas_total_eur", "sum"))
 )
 
-# Forzar 12 meses
-tabla_ventas = (
+tabla = (
     pd.DataFrame({"mes": range(1, 13)})
     .merge(ventas_mensuales, on="mes", how="left")
     .fillna(0)
 )
 
-# Nombre del mes
-tabla_ventas["Mes"] = tabla_ventas["mes"].map({
+tabla["Mes"] = tabla["mes"].map({
     1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
     5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
     9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
 })
 
-tabla_ventas = tabla_ventas[["Mes", "ventas_mes"]]
-tabla_ventas = tabla_ventas.rename(columns={"ventas_mes": "Ventas del mes (€)"})
+tabla = tabla[["Mes", "ventas_mes"]]
+tabla.columns = ["Mes", "Ventas del mes (€)"]
 
 st.dataframe(
-    tabla_ventas,
+    tabla,
     hide_index=True,
     use_container_width=True
 )
