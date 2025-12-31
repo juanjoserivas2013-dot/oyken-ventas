@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as stñññññ
 import pandas as pd
 from pathlib import Path
 
