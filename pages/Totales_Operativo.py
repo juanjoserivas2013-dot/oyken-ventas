@@ -29,7 +29,6 @@ div[data-baseweb="tag"]:hover {
 # =========================
 # CONFIGURACIÓN DE PÁGINA
 # =========================
-st.set_page_config(page_title="OYKEN · Totales Operativos", layout="centered")
 
 st.title("OYKEN · Totales Operativos")
 st.caption("Consolidado mensual de magnitudes económicas operativas")
@@ -86,6 +85,30 @@ if COMPRAS_FILE.exists():
 
     # Unir a Totales Operativos
     df = pd.concat([df, compras_mensuales], ignore_index=True)
+
+# =========================
+# LECTURA GASTOS MENSUALES
+# =========================
+GASTOS_FILE = Path("gastos.csv")
+
+if GASTOS_FILE.exists():
+    df_gastos = pd.read_csv(GASTOS_FILE)
+    df_gastos["Fecha"] = pd.to_datetime(df_gastos["Fecha"], dayfirst=True)
+
+    gastos_mensuales = (
+        df_gastos
+        .assign(
+            anio=df_gastos["Fecha"].dt.year,
+            mes=df_gastos["Fecha"].dt.month
+        )
+        .groupby(["anio", "mes"], as_index=False)
+        .agg(importe_eur=("Coste (€)", "sum"))
+    )
+
+    gastos_mensuales["origen"] = "Gastos"
+    gastos_mensuales["concepto"] = "Gastos Totales"
+
+    df = pd.concat([df, gastos_mensuales], ignore_index=True)
 
 if df.empty:
     st.info("Totales Operativos no contiene registros.")
