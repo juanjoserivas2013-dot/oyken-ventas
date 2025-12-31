@@ -110,6 +110,7 @@ if guardar:
 
 if df.empty:
     st.info("Aún no hay ventas registradas.")
+    st.stop()
 
 # =========================
 # PREPARACIÓN ISO (REGLA CORRECTA GRANDES CADENAS)
@@ -390,8 +391,6 @@ c_mes, c_ano = st.columns(2)
 with c_mes:
     mes_sel = st.selectbox(
         "Mes",
-        key="mes_cierre_ventas"
-    )
         options=list(range(1, 13)),
         index=fecha_hoy.month - 1,
         format_func=lambda x: date(1900, x, 1).strftime("%B")
@@ -400,8 +399,6 @@ with c_mes:
 with c_ano:
     ano_sel = st.selectbox(
         "Año",
-        "key="anio_cierre_ventas
-)
         options=sorted(df["fecha"].dt.year.unique()),
         index=len(sorted(df["fecha"].dt.year.unique())) - 1
     )
@@ -430,44 +427,3 @@ with c2:
 with c3:
     st.metric("Ticket medio mes", f"{ticket_medio_mes:,.2f} €")
 
-# =========================
-# RESUMEN ANUAL · VENTAS (TABLA SIMPLE)
-# =========================
-
-st.divider()
-st.subheader("Ventas mensuales · Resumen anual")
-
-anio_resumen = st.selectbox(
-    "Año",
-    options=sorted(df["fecha"].dt.year.unique()),
-    index=len(sorted(df["fecha"].dt.year.unique())) - 1,
-    key="anio_resumen_ventas"
-)
-
-ventas_mensuales = (
-    df[df["fecha"].dt.year == anio_resumen]
-    .assign(mes=lambda x: x["fecha"].dt.month)
-    .groupby("mes", as_index=False)
-    .agg(ventas_mes=("ventas_total_eur", "sum"))
-)
-
-tabla = (
-    pd.DataFrame({"mes": range(1, 13)})
-    .merge(ventas_mensuales, on="mes", how="left")
-    .fillna(0)
-)
-
-tabla["Mes"] = tabla["mes"].map({
-    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
-    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
-    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
-})
-
-tabla = tabla[["Mes", "ventas_mes"]]
-tabla.columns = ["Mes", "Ventas del mes (€)"]
-
-st.dataframe(
-    tabla,
-    hide_index=True,
-    use_container_width=True
-)
