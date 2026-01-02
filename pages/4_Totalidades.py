@@ -51,6 +51,9 @@ if not CSV_FILE.exists():
 
 tabla_meses = pd.read_csv(CSV_FILE)
 
+# 👈 CLAVE ABSOLUTA
+tabla_meses["Mes"] = tabla_meses["Mes"].astype(str).str.strip()
+
 # =========================
 # FILTRO POR MES
 # =========================
