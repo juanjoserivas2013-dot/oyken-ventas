@@ -454,7 +454,6 @@ with col1:
         "Año",
         anios_disponibles,
         index=len(anios_disponibles) - 1
-        key="anio_control_operativo"
     )
 
 with col2:
@@ -462,7 +461,6 @@ with col2:
         "Mes",
         options=[0] + list(MESES_ES.keys()),
         format_func=lambda x: "Todos los meses" if x == 0 else MESES_ES[x]
-        key="mes_control_operativo"
     )
 
 # -------------------------
