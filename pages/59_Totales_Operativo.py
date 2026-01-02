@@ -56,7 +56,6 @@ df = pd.concat(dfs, ignore_index=True)
 # =========================
 # LECTURA COMPRAS MENSUALES
 # =========================
-
 COMPRAS_FILE = Path("compras.csv")
 
 if COMPRAS_FILE.exists():
@@ -109,6 +108,35 @@ if GASTOS_FILE.exists():
     gastos_mensuales["concepto"] = "Gastos Totales"
 
     df = pd.concat([df, gastos_mensuales], ignore_index=True)
+
+# =========================
+# LECTURA RRHH · COSTE MENSUAL
+# =========================
+RRHH_FILE = Path("rrhh_coste_mensual.csv")
+
+if RRHH_FILE.exists():
+    df_rrhh = pd.read_csv(RRHH_FILE)
+
+    # Normalizar esquema a Totales Operativos
+    df_rrhh = df_rrhh.rename(columns={
+        "anio": "anio",
+        "mes": "mes",
+        "Coste mensual (€)": "importe_eur"
+    })
+
+    df_rrhh["origen"] = "RRHH"
+    df_rrhh["concepto"] = "Coste RRHH"
+
+    df_rrhh = df_rrhh[[
+        "anio",
+        "mes",
+        "origen",
+        "concepto",
+        "importe_eur"
+    ]]
+
+    df = pd.concat([df, df_rrhh], ignore_index=True)
+
 
 if df.empty:
     st.info("Totales Operativos no contiene registros.")
