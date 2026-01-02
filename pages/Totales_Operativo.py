@@ -23,10 +23,6 @@ if DATA_FILE.exists():
 if VENTAS_FILE.exists():
     dfs.append(pd.read_csv(VENTAS_FILE))
 
-if not dfs:
-    st.warning("No existen datos en Totales Operativos.")
-    st.stop()
-
 df = pd.concat(dfs, ignore_index=True)
 
 # =========================
