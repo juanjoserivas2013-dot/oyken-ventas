@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
-from datetime import date
+from datetime import date.came
 
 # =========================
 # CONFIGURACIÓN
@@ -17,6 +17,7 @@ DATA_FILE = Path("ventas.csv")
 DOW_ES = {
     0: "Lunes", 1: "Martes", 2: "Miércoles",
     3: "Jueves", 4: "Viernes", 5: "Sábado", 6: "Domingo"
+
 }
 
 COLUMNAS = [
