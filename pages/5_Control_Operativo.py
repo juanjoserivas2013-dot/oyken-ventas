@@ -435,7 +435,6 @@ st.divider()
 st.subheader("Ventas mensuales")
 
 anio_actual = date.today().year
-
 datos_meses = []
 
 MESES_ES = {
@@ -453,11 +452,16 @@ MESES_ES = {
     12: "Diciembre"
 }
 
+for mes in range(1, 13):
+    ventas_mes = df[
+        (df["fecha"].dt.year == anio_actual) &
+        (df["fecha"].dt.month == mes)
+    ]["ventas_total_eur"].sum()
+
     datos_meses.append({
         "Mes": MESES_ES[mes],
         "Ventas del mes (€)": round(ventas_mes, 2)
     })
-
 
 tabla_meses = pd.DataFrame(datos_meses)
 
