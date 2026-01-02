@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
+from datetime import date
 
 # =========================
 # IDENTIDAD DE LA PÁGINA
@@ -10,7 +11,21 @@ st.title("OYKEN · Totalidades")
 st.caption("Ventas mensuales consolidadas")
 
 # =========================
-# CARGA DEL CSV DESDE CONTROL OPERATIVO
+# CONTEXTO TEMPORAL
+# =========================
+
+st.subheader("Contexto temporal")
+
+anio_actual = date.today().year
+
+anio_sel = st.selectbox(
+    "Año",
+    options=[anio_actual],
+    index=0
+)
+
+# =========================
+# CARGA DEL CSV
 # =========================
 
 CSV_FILE = Path("ventas_mensuales.csv")
