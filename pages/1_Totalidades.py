@@ -1,35 +1,35 @@
 import streamlit as st
-from datetime import date
+import pandas as pd
+from pathlib import Path
 
 # =========================
-# CONTEXTO TEMPORAL
+# IDENTIDAD DE LA PÁGINA
 # =========================
 
-st.subheader("OYKEN Totalidades")
-st.caption("Selecciona el periodo de análisis")
+st.title("OYKEN · Totalidades")
+st.caption("Ventas mensuales consolidadas")
 
-MESES = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-]
+# =========================
+# CARGA DEL CSV DESDE CONTROL OPERATIVO
+# =========================
 
-anio_actual = date.today().year
-mes_actual = date.today().month
+CSV_FILE = Path("ventas_mensuales.csv")
 
-col1, col2 = st.columns(2)
+if not CSV_FILE.exists():
+    st.warning("No existe el archivo de ventas mensuales generado desde Control Operativo.")
+    st.stop()
 
-with col1:
-    mes_sel = st.selectbox(
-        "Mes",
-        options=MESES,
-        index=mes_actual - 1
-    )
+tabla_meses = pd.read_csv(CSV_FILE)
 
-with col2:
-    anio_sel = st.selectbox(
-        "Año",
-        options=list(range(anio_actual - 5, anio_actual + 6)),
-        index=5
-    )
+# =========================
+# VISUALIZACIÓN
+# =========================
 
-st.caption(f"Periodo activo: {mes_sel} {anio_sel}")
+st.divider()
+st.subheader("Ventas mensuales")
+
+st.dataframe(
+    tabla_meses,
+    hide_index=True,
+    use_container_width=True
+)
