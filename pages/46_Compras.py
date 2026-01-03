@@ -237,27 +237,74 @@ with st.container(border=True):
             st.success("Compra eliminada")
 
 # =========================================================
-# COMPRAS MENSUALES · TABLA ANUAL
+# COMPRAS MENSUALES
 # =========================================================
 st.divider()
 st.subheader("Compras mensuales")
 
-anio_actual = date.today().year
+# -------------------------
+# MAPA MESES ESPAÑOL
+# -------------------------
+MESES_ES = {
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+}
 
-# Asegurar tipo fecha
+# -------------------------
+# PREPARAR DATOS
+# -------------------------
 df_compras = st.session_state.compras.copy()
-df_compras["Fecha"] = pd.to_datetime(df_compras["Fecha"], dayfirst=True)
+df_compras["Fecha"] = pd.to_datetime(
+    df_compras["Fecha"],
+    dayfirst=True,
+    errors="coerce"
+)
 
+# -------------------------
+# SELECTORES
+# -------------------------
+c1, c2 = st.columns(2)
+
+with c1:
+    anio_sel = st.selectbox(
+        "Año",
+        sorted(df_compras["Fecha"].dt.year.dropna().unique()),
+        index=len(sorted(df_compras["Fecha"].dt.year.dropna().unique())) - 1,
+        key="anio_compras_mensual"
+    )
+
+with c2:
+    mes_sel = st.selectbox(
+        "Mes",
+        options=[0] + list(MESES_ES.keys()),
+        format_func=lambda x: "Todos los meses" if x == 0 else MESES_ES[x],
+        key="mes_compras_mensual"
+    )
+
+# -------------------------
+# FILTRADO
+# -------------------------
+df_filtrado = df_compras[df_compras["Fecha"].dt.year == anio_sel]
+
+if mes_sel != 0:
+    df_filtrado = df_filtrado[df_filtrado["Fecha"].dt.month == mes_sel]
+
+# -------------------------
+# CONSTRUCCIÓN TABLA
+# -------------------------
 datos_meses = []
 
 for mes in range(1, 13):
-    total_mes = df_compras[
-        (df_compras["Fecha"].dt.year == anio_actual) &
-        (df_compras["Fecha"].dt.month == mes)
+    if mes_sel != 0 and mes != mes_sel:
+        continue
+
+    total_mes = df_filtrado[
+        df_filtrado["Fecha"].dt.month == mes
     ]["Coste (€)"].sum()
 
     datos_meses.append({
-        "Mes": date(1900, mes, 1).strftime("%B"),
+        "Mes": MESES_ES[mes],
         "Compras del mes (€)": round(total_mes, 2)
     })
 
@@ -268,3 +315,9 @@ st.dataframe(
     hide_index=True,
     use_container_width=True
 )
+
+st.metric(
+    "Total período seleccionado",
+    f"{tabla_compras_mensuales['Compras del mes (€)'].sum():,.2f} €"
+)
+
