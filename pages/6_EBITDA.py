@@ -3,108 +3,143 @@ import pandas as pd
 from pathlib import Path
 
 # =========================
-# OYKEN · EBITDA (EXPERIMENTAL)
+# CONFIGURACIÓN
 # =========================
+st.set_page_config(
+    page_title="OYKEN · EBITDA",
+    layout="centered"
+)
 
-st.set_page_config(page_title="OYKEN · EBITDA", layout="centered")
 st.title("OYKEN · EBITDA")
 st.caption("Lectura consolidada de rentabilidad operativa")
 
-VENTAS_MENSUALES_FILE = Path("ventas_mensuales.csv")
+# =========================
+# ARCHIVOS FUENTE (CANÓNICOS)
+# =========================
+VENTAS_FILE = Path("ventas_mensuales.csv")
+COMPRAS_FILE = Path("compras_mensuales.csv")
 
-# -------------------------
-# CARGA DATOS
-# -------------------------
-
-if not VENTAS_MENSUALES_FILE.exists():
-    st.warning("No hay datos consolidados de ventas todavía.")
+# =========================
+# CARGA DE DATOS
+# =========================
+if not VENTAS_FILE.exists() or not COMPRAS_FILE.exists():
+    st.warning("Aún no existen cierres mensuales suficientes.")
     st.stop()
 
-df = pd.read_csv(VENTAS_MENSUALES_FILE)
+df_ventas = pd.read_csv(VENTAS_FILE)
+df_compras = pd.read_csv(COMPRAS_FILE)
 
-if df.empty:
-    st.warning("El archivo de ventas mensuales está vacío.")
-    st.stop()
+# Normalizar tipos
+for df in [df_ventas, df_compras]:
+    df["anio"] = pd.to_numeric(df["anio"], errors="coerce")
+    df["mes"] = pd.to_numeric(df["mes"], errors="coerce")
 
-df["anio"] = pd.to_numeric(df["anio"], errors="coerce")
-df["mes"] = pd.to_numeric(df["mes"], errors="coerce")
-df["ventas_total_eur"] = pd.to_numeric(df["ventas_total_eur"], errors="coerce")
+df_ventas["ventas_total_eur"] = pd.to_numeric(
+    df_ventas["ventas_total_eur"], errors="coerce"
+).fillna(0)
 
-# ORDEN CRONOLOGICO#
-df = df.sort_values(["anio", "mes"])
+df_compras["compras_total_eur"] = pd.to_numeric(
+    df_compras["compras_total_eur"], errors="coerce"
+).fillna(0)
 
-# -------------------------
+# =========================
 # SELECTORES
-# -------------------------
+# =========================
+anios_disponibles = sorted(
+    set(df_ventas["anio"].dropna().unique())
+    | set(df_compras["anio"].dropna().unique())
+)
 
-MESES_ES = {
-    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
-    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
-    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
-}
+if not anios_disponibles:
+    st.info("No hay datos suficientes para calcular EBITDA.")
+    st.stop()
 
 c1, c2 = st.columns(2)
 
 with c1:
     anio_sel = st.selectbox(
         "Año",
-        sorted(df["anio"].dropna().unique()),
-        index=len(sorted(df["anio"].dropna().unique())) - 1
+        anios_disponibles,
+        index=len(anios_disponibles) - 1
     )
 
 with c2:
     mes_sel = st.selectbox(
         "Mes",
-        options=[0] + list(MESES_ES.keys()),
-        format_func=lambda x: "Todos los meses" if x == 0 else MESES_ES[x]
+        options=[0] + list(range(1, 13)),
+        format_func=lambda x: "Todos los meses" if x == 0 else [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ][x - 1]
     )
 
-# -------------------------
+# =========================
 # FILTRADO
-# -------------------------
-
-df_f = df[df["anio"] == anio_sel]
+# =========================
+df_v = df_ventas[df_ventas["anio"] == anio_sel]
+df_c = df_compras[df_compras["anio"] == anio_sel]
 
 if mes_sel != 0:
-    df_f = df_f[df_f["mes"] == mes_sel]
+    df_v = df_v[df_v["mes"] == mes_sel]
+    df_c = df_c[df_c["mes"] == mes_sel]
 
-df_f["Mes"] = df_f["mes"].map(MESES_ES)
+# =========================
+# CRUCE Y CÁLCULO EBITDA
+# =========================
+df_base = pd.DataFrame({
+    "mes": range(1, 13)
+})
 
-# -------------------------
-# KPIs EXPERIMENTALES
-# -------------------------
-
-ventas_periodo = df_f["ventas_total_eur"].sum()
-meses_con_datos = df_f["mes"].nunique()
-media_mensual = (
-    ventas_periodo / meses_con_datos
-    if meses_con_datos > 0 else 0
+df_base = df_base.merge(
+    df_v[["mes", "ventas_total_eur"]],
+    on="mes",
+    how="left"
 )
 
-k1, k2, k3 = st.columns(3)
+df_base = df_base.merge(
+    df_c[["mes", "compras_total_eur"]],
+    on="mes",
+    how="left"
+)
 
-k1.metric("Ventas período", f"{ventas_periodo:,.2f} €")
-k2.metric("Meses con datos", meses_con_datos)
-k3.metric("Media mensual", f"{media_mensual:,.2f} €")
+df_base["ventas_total_eur"] = df_base["ventas_total_eur"].fillna(0)
+df_base["compras_total_eur"] = df_base["compras_total_eur"].fillna(0)
 
-# -------------------------
-# TABLA BASE
-# -------------------------
+df_base["ebitda_eur"] = (
+    df_base["ventas_total_eur"] - df_base["compras_total_eur"]
+)
+
+# Aplicar filtro de mes visual
+if mes_sel != 0:
+    df_base = df_base[df_base["mes"] == mes_sel]
+
+# =========================
+# PRESENTACIÓN TABLA
+# =========================
+MESES_ES = {
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+}
+
+df_base["Mes"] = df_base["mes"].map(MESES_ES)
+
+tabla_ebitda = df_base[[
+    "Mes",
+    "ventas_total_eur",
+    "compras_total_eur",
+    "ebitda_eur"
+]].rename(columns={
+    "ventas_total_eur": "Ventas (€)",
+    "compras_total_eur": "Compras (€)",
+    "ebitda_eur": "EBITDA (€)"
+})
 
 st.divider()
-st.subheader("Detalle de ventas consolidadas")
-
-tabla = (
-    df_f[["anio", "Mes", "ventas_total_eur"]]
-    .rename(columns={
-        "anio": "Año",
-        "ventas_total_eur": "Ventas (€)"
-    })
-)
+st.subheader("EBITDA · Detalle mensual")
 
 st.dataframe(
-    tabla,
+    tabla_ebitda,
     hide_index=True,
     use_container_width=True
 )
-
