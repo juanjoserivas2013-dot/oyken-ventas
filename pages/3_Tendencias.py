@@ -33,6 +33,23 @@ def cv_turno_seguro(ventas, tickets):
     tm = np.where(tickets > 0, ventas / tickets, np.nan)
     return np.nanstd(tm)
 
+def info_requisito(texto):
+    st.markdown(
+        f"""
+        <div style="
+            background-color: #eef5ff;
+            border-left: 3px solid #3b82f6;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #1f2937;
+        ">
+            {texto}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 def render_bloque(titulo, metrica_label, metrica_valor, periodo, texto):
     st.subheader(titulo.upper())
     st.markdown(f"**{metrica_label.upper()}**")
@@ -41,10 +58,11 @@ def render_bloque(titulo, metrica_label, metrica_valor, periodo, texto):
     st.markdown(texto)
     st.divider()
 
-def render_bloque_no_disponible(titulo, motivo):
+def render_bloque_no_disponible(titulo, motivo, requisito):
     st.subheader(titulo.upper())
     st.caption("Bloque no disponible")
     st.markdown(motivo)
+    info_requisito(requisito)
     st.divider()
 
 # =========================
@@ -108,8 +126,8 @@ en el comportamiento reciente del sistema.
 else:
     render_bloque_no_disponible(
         "Dirección del negocio",
-        "Este bloque analiza la dirección del negocio a partir de la semana en curso. "
-        "Actualmente no hay suficientes días operados dentro de la semana para una lectura estructural fiable."
+        "Este bloque analiza la dirección del negocio a partir de la semana en curso.",
+        "Requisito mínimo: 5 días operados dentro de la misma semana."
     )
 
 # =========================
@@ -141,8 +159,8 @@ describiendo el nivel de estabilidad interna del sistema operativo.
 else:
     render_bloque_no_disponible(
         "Consistencia del resultado",
-        "Este bloque requiere un mínimo de 7 días consecutivos de operación para evaluar estabilidad y consistencia. "
-        "La base actual aún no alcanza ese umbral."
+        "Este bloque evalúa la estabilidad y regularidad del resultado diario.",
+        "Requisito mínimo: 7 días consecutivos de operación."
     )
 
 # =========================
@@ -175,8 +193,8 @@ operativo.
 else:
     render_bloque_no_disponible(
         "Días fuertes y días débiles",
-        "Este bloque identifica patrones recurrentes por día de la semana. "
-        "El análisis requiere al menos 15 días operados para evitar conclusiones espurias."
+        "Este bloque identifica patrones recurrentes por día de la semana.",
+        "Requisito mínimo: 15 días operados."
     )
 
 # =========================
@@ -207,7 +225,8 @@ reflejando el grado de estabilidad del comportamiento de venta.
 else:
     render_bloque_no_disponible(
         "Estabilidad del ticket medio",
-        "Este bloque requiere al menos 7 días de operación para evaluar la regularidad del ingreso por operación."
+        "Este bloque evalúa la estabilidad del ingreso por operación.",
+        "Requisito mínimo: 7 días de operación."
     )
 
 # =========================
@@ -240,7 +259,8 @@ fricción en la previsibilidad del resultado diario.
 else:
     render_bloque_no_disponible(
         "Volatilidad por turnos",
-        "Este bloque evalúa la estabilidad por franja horaria y requiere un mínimo de 7 días operados."
+        "Este bloque evalúa la estabilidad por franja horaria.",
+        "Requisito mínimo: 7 días operados."
     )
 
 # =========================
@@ -277,7 +297,8 @@ describe el grado de robustez estructural del sistema.
 else:
     render_bloque_no_disponible(
         "Dependencia de picos",
-        "Este bloque analiza concentración de ventas excepcionales y requiere al menos 10 días de operación."
+        "Este bloque analiza la concentración de ventas excepcionales.",
+        "Requisito mínimo: 10 días de operación."
     )
 
 # =========================
