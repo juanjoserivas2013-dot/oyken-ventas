@@ -340,6 +340,136 @@ st.metric(
     f"{tabla_compras_mensuales['Compras del mes (€)'].sum():,.2f} €"
 )
 
+# =========================================================
+# COSTE DE PRODUCTO SOBRE VENTAS · BLOQUE ESTRUCTURAL OYKEN
+# =========================================================
+
+st.divider()
+st.subheader("Coste de producto sobre ventas")
+
+st.caption(
+    "Indicador estructural del peso del producto en la facturación. "
+    "Este valor se utiliza como referencia de margen bruto en OYKEN."
+)
+
+# -------------------------
+# ARCHIVO CANÓNICO DEL PORCENTAJE
+# -------------------------
+COSTE_PRODUCTO_FILE = Path("coste_producto.csv")
+
+# -------------------------
+# LECTURA DE COMPRAS DEL PERIODO
+# -------------------------
+compras_periodo = tabla_compras_mensuales["Compras del mes (€)"].sum()
+
+# -------------------------
+# LECTURA DE VENTAS (DESDE EBITDA / VENTAS)
+# -------------------------
+VENTAS_FILE = Path("ventas.csv")
+
+if not VENTAS_FILE.exists():
+    st.warning(
+        "No existen datos de ventas. "
+        "No se puede calcular el coste de producto."
+    )
+    st.stop()
+
+df_ventas = pd.read_csv(VENTAS_FILE)
+
+required_cols = {"Fecha", "Venta (€)"}
+if not required_cols.issubset(df_ventas.columns):
+    st.error("El archivo de ventas no tiene el formato esperado.")
+    st.stop()
+
+df_ventas["Fecha"] = pd.to_datetime(
+    df_ventas["Fecha"],
+    dayfirst=True,
+    errors="coerce"
+)
+
+df_ventas["Venta (€)"] = pd.to_numeric(
+    df_ventas["Venta (€)"],
+    errors="coerce"
+).fillna(0)
+
+ventas_filtradas = df_ventas[
+    df_ventas["Fecha"].dt.year == anio_sel
+]
+
+if mes_sel != 0:
+    ventas_filtradas = ventas_filtradas[
+        ventas_filtradas["Fecha"].dt.month == mes_sel
+    ]
+
+ventas_periodo = ventas_filtradas["Venta (€)"].sum()
+
+# -------------------------
+# VALIDACIÓN
+# -------------------------
+if ventas_periodo <= 0:
+    st.warning("Las ventas del período son cero. No se puede calcular el porcentaje.")
+    st.stop()
+
+# -------------------------
+# CÁLCULO
+# -------------------------
+porcentaje_coste = compras_periodo / ventas_periodo
+
+# -------------------------
+# VISUALIZACIÓN
+# -------------------------
+c1, c2 = st.columns(2)
+
+c1.metric("Compras del período (€)", f"{compras_periodo:,.2f}")
+c2.metric("Ventas del período (€)", f"{ventas_periodo:,.2f}")
+
+st.markdown("### Cálculo")
+
+st.markdown(
+    f"""
+    **Coste de producto (% sobre ventas)**  
+    {compras_periodo:,.2f} / {ventas_periodo:,.2f} = **{porcentaje_coste:.2%}**
+    """
+)
+
+# -------------------------
+# GUARDADO CONTROLADO
+# -------------------------
+if st.button("Guardar porcentaje de coste de producto", use_container_width=True):
+
+    if not COSTE_PRODUCTO_FILE.exists():
+        pd.DataFrame(
+            columns=[
+                "anio",
+                "mes",
+                "coste_producto_pct",
+                "fecha_actualizacion"
+            ]
+        ).to_csv(COSTE_PRODUCTO_FILE, index=False)
+
+    df_hist = pd.read_csv(COSTE_PRODUCTO_FILE)
+
+    df_hist = df_hist[
+        ~(
+            (df_hist["anio"] == anio_sel) &
+            (df_hist["mes"] == mes_sel)
+        )
+    ]
+
+    nuevo_registro = pd.DataFrame([{
+        "anio": anio_sel,
+        "mes": mes_sel,
+        "coste_producto_pct": round(porcentaje_coste, 4),
+        "fecha_actualizacion": datetime.now()
+    }])
+
+    df_final = pd.concat([df_hist, nuevo_registro], ignore_index=True)
+    df_final = df_final.sort_values(["anio", "mes"])
+
+    df_final.to_csv(COSTE_PRODUCTO_FILE, index=False)
+
+    st.success("Porcentaje de coste de producto guardado correctamente.")
+
 # -------------------------
 # GUARDAR CSV MENSUAL (CANÓNICO)
 # -------------------------
