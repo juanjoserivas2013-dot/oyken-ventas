@@ -425,42 +425,40 @@ st.markdown(
 )
 
 # -------------------------
-# GUARDADO CONTROLADO
+# GUARDADO AUTOMÁTICO · CCV CANÓNICO
 # -------------------------
-if st.button("Guardar porcentaje de coste de producto", use_container_width=True):
+COSTE_PRODUCTO_FILE = Path("coste_producto.csv")
 
-    if not COSTE_PRODUCTO_FILE.exists():
-        pd.DataFrame(
-            columns=[
-                "anio",
-                "mes",
-                "coste_producto_pct",
-                "fecha_actualizacion"
-            ]
-        ).to_csv(COSTE_PRODUCTO_FILE, index=False)
+if not COSTE_PRODUCTO_FILE.exists():
+    pd.DataFrame(
+        columns=[
+            "anio",
+            "mes",
+            "coste_producto_pct",
+            "fecha_actualizacion"
+        ]
+    ).to_csv(COSTE_PRODUCTO_FILE, index=False)
 
-    df_hist = pd.read_csv(COSTE_PRODUCTO_FILE)
+df_hist = pd.read_csv(COSTE_PRODUCTO_FILE)
 
-    df_hist = df_hist[
-        ~(
-            (df_hist["anio"] == anio_sel) &
-            (df_hist["mes"] == mes_sel)
-        )
-    ]
+# Overwrite limpio por año + mes
+df_hist = df_hist[
+    ~(
+        (df_hist["anio"] == anio_sel) &
+        (df_hist["mes"] == mes_sel)
+    )
+]
 
-    nuevo_registro = pd.DataFrame([{
-        "anio": anio_sel,
-        "mes": mes_sel,
-        "coste_producto_pct": round(porcentaje_coste, 4),
-        "fecha_actualizacion": datetime.now()
-    }])
+nuevo_registro = pd.DataFrame([{
+    "anio": anio_sel,
+    "mes": mes_sel,
+    "coste_producto_pct": round(porcentaje_coste, 4),
+    "fecha_actualizacion": datetime.now()
+}])
 
-    df_final = pd.concat([df_hist, nuevo_registro], ignore_index=True)
-    df_final = df_final.sort_values(["anio", "mes"])
-
-    df_final.to_csv(COSTE_PRODUCTO_FILE, index=False)
-
-    st.success("Porcentaje de coste de producto guardado correctamente.")
+df_final = pd.concat([df_hist, nuevo_registro], ignore_index=True)
+df_final = df_final.sort_values(["anio", "mes"])
+df_final.to_csv(COSTE_PRODUCTO_FILE, index=False)
 
 # -------------------------
 # GUARDAR CSV MENSUAL (CANÓNICO)
