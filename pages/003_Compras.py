@@ -402,33 +402,52 @@ if ventas_periodo <= 0:
     st.warning("Las ventas del período son cero. No se puede calcular el porcentaje.")
     st.stop()
 
-# -------------------------
-# CÁLCULO
-# -------------------------
+# =========================================================
+# COSTE DE PRODUCTO SOBRE VENTAS · BLOQUE ESTRUCTURAL OYKEN
+# =========================================================
+
+# ---------------------------------------------------------
+# SUBBLOQUE 1 · CÁLCULO INTERNO (NO VISIBLE)
+# ---------------------------------------------------------
+# Aquí SOLO se calcula el porcentaje.
+# No se muestra nada en pantalla.
+
 porcentaje_coste = compras_periodo / ventas_periodo
 
-# -------------------------
-# VISUALIZACIÓN
-# -------------------------
+
+# ---------------------------------------------------------
+# SUBBLOQUE 2 · VISUALIZACIÓN (UI)
+# ---------------------------------------------------------
+# Aquí SOLO se muestra información.
+# No se recalcula nada.
+
 c1, c2 = st.columns(2)
 
-c1.metric("Compras del período (€)", f"{compras_periodo:,.2f}")
-c2.metric("Ventas del período (€)", f"{ventas_periodo:,.2f}")
-
-st.markdown("### Cálculo")
-
-st.markdown(
-    f"""
-    **Coste de producto (% sobre ventas)**  
-    {compras_periodo:,.2f} / {ventas_periodo:,.2f} = **{porcentaje_coste:.2%}**
-    """
+c1.metric(
+    "Compras del período (€)",
+    f"{compras_periodo:,.2f}"
 )
 
-# -------------------------
-# GUARDADO AUTOMÁTICO · CCV CANÓNICO
-# -------------------------
+c2.metric(
+    "Ventas del período (€)",
+    f"{ventas_periodo:,.2f}"
+)
+
+st.metric(
+    "Coste de producto (% sobre ventas)",
+    f"{porcentaje_coste:.2%}"
+)
+
+
+# ---------------------------------------------------------
+# SUBBLOQUE 3 · GUARDADO AUTOMÁTICO (CCV CANÓNICO)
+# ---------------------------------------------------------
+# Este bloque persiste el dato automáticamente
+# para que pueda ser leído por Breakeven y otros módulos.
+
 COSTE_PRODUCTO_FILE = Path("coste_producto.csv")
 
+# Crear CSV si no existe
 if not COSTE_PRODUCTO_FILE.exists():
     pd.DataFrame(
         columns=[
@@ -439,6 +458,7 @@ if not COSTE_PRODUCTO_FILE.exists():
         ]
     ).to_csv(COSTE_PRODUCTO_FILE, index=False)
 
+# Cargar histórico
 df_hist = pd.read_csv(COSTE_PRODUCTO_FILE)
 
 # Overwrite limpio por año + mes
@@ -449,6 +469,7 @@ df_hist = df_hist[
     )
 ]
 
+# Nuevo registro
 nuevo_registro = pd.DataFrame([{
     "anio": anio_sel,
     "mes": mes_sel,
@@ -456,6 +477,7 @@ nuevo_registro = pd.DataFrame([{
     "fecha_actualizacion": datetime.now()
 }])
 
+# Guardado final
 df_final = pd.concat([df_hist, nuevo_registro], ignore_index=True)
 df_final = df_final.sort_values(["anio", "mes"])
 df_final.to_csv(COSTE_PRODUCTO_FILE, index=False)
