@@ -2,98 +2,79 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 
-st.subheader("OYKEN · Breakeven Operativo")
-st.caption("Punto de equilibrio estructural del negocio")
+# =====================================================
+# CABECERA
+# =====================================================
+st.subheader("OYKEN · Breakeven operativo")
+st.caption(
+    "Cálculo del punto de equilibrio a partir del margen bruto "
+    "y de los costes fijos estructurales del negocio."
+)
 
 st.divider()
 
 # =====================================================
-# ARCHIVOS
-# =====================================================
-COSTE_PRODUCTO_FILE = Path("coste_producto.csv")
-RRHH_FILE = Path("rrhh_mensual.csv")
-GASTOS_FILE = Path("gastos.csv")
-
-# =====================================================
-# SELECTOR TEMPORAL
+# SELECTOR TEMPORAL (GOBIERNA TODO)
 # =====================================================
 c1, c2 = st.columns(2)
 
 with c1:
-    anio_sel = st.number_input(
+    anio_sel = st.selectbox(
         "Año",
-        min_value=2020,
-        max_value=2100,
-        value=2026
+        options=[2024, 2025, 2026],
+        index=1
     )
 
 with c2:
     mes_sel = st.selectbox(
         "Mes",
-        options=list(range(1, 13)),
-        format_func=lambda x: [
-            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-        ][x - 1]
+        options=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        format_func=lambda x: "Todos los meses" if x == 0 else x
     )
 
+# =====================================================
+# MARGEN BRUTO
+# Fuente: Compras · Coste de producto sobre ventas
+# =====================================================
 st.divider()
+st.markdown("### Margen bruto")
 
-# =====================================================
-# MARGEN BRUTO (DESDE COMPRAS)
-# =====================================================
-if not COSTE_PRODUCTO_FILE.exists():
-    st.error("No existe el coste de producto definido en Compras.")
+MARGEN_FILE = Path("coste_producto_pct.csv")
+margen_bruto = None
+
+if MARGEN_FILE.exists():
+    df_margen = pd.read_csv(MARGEN_FILE)
+
+    fila = df_margen[
+        (df_margen["anio"] == anio_sel) &
+        ((df_margen["mes"] == mes_sel) if mes_sel != 0 else True)
+    ]
+
+    if not fila.empty:
+        pct_coste = fila.iloc[-1]["coste_producto_pct"]
+        margen_bruto = round(1 - pct_coste, 4)
+
+if margen_bruto is None or margen_bruto <= 0:
+    st.warning("No hay margen bruto válido para el período seleccionado.")
     st.stop()
 
-df_cp = pd.read_csv(COSTE_PRODUCTO_FILE)
+st.metric("Margen bruto operativo", f"{margen_bruto:.2%}")
 
-row_cp = df_cp[
-    (df_cp["anio"] == anio_sel) &
-    (df_cp["mes"] == mes_sel)
-]
-
-if row_cp.empty:
-    st.warning("No hay coste de producto para el período seleccionado.")
-    st.stop()
-
-coste_producto_pct = row_cp.iloc[0]["coste_producto_pct"]
-margen_bruto = 1 - coste_producto_pct
-
-st.markdown("### Margen bruto estructural")
-st.metric(
-    "Margen bruto",
-    f"{margen_bruto:.2%}"
-)
-
-st.caption("Fuente: Compras · Coste de producto sobre ventas")
-
+# =====================================================
+# COSTES FIJOS ESTRUCTURALES
+# =====================================================
 st.divider()
+st.markdown("### Costes fijos estructurales")
 
-# =====================================================
-# COSTES FIJOS · RRHH
-# =====================================================
-if not RRHH_FILE.exists():
-    st.error("No existen datos de Recursos Humanos.")
-    st.stop()
-
-df_rrhh = pd.read_csv(RRHH_FILE)
-
-row_rrhh = df_rrhh[
-    (df_rrhh["anio"] == anio_sel) &
-    (df_rrhh["mes"] == mes_sel)
-]
-from pathlib import Path
-import pandas as pd
-
+# -----------------------------------------------------
+# RRHH · FUENTE CANÓNICA
+# -----------------------------------------------------
 RRHH_MENSUAL_FILE = Path("rrhh_mensual.csv")
-
 coste_rrhh = 0.0
 
 if RRHH_MENSUAL_FILE.exists():
     df_rrhh = pd.read_csv(RRHH_MENSUAL_FILE)
 
-    # Filtrado temporal controlado por Breakeven
     df_rrhh_filtrado = df_rrhh[
         (df_rrhh["anio"] == anio_sel) &
         ((df_rrhh["mes"] == mes_sel) if mes_sel != 0 else True)
@@ -101,84 +82,88 @@ if RRHH_MENSUAL_FILE.exists():
 
     if not df_rrhh_filtrado.empty:
         coste_rrhh = df_rrhh_filtrado["rrhh_total_eur"].sum()
-else:
-    coste_rrhh = 0.0
 
-if row_rrhh.empty:
-    st.warning("No hay costes de RRHH para el período seleccionado.")
-    st.stop()
+# -----------------------------------------------------
+# GASTOS FIJOS ESTRUCTURALES
+# -----------------------------------------------------
+GASTOS_FILE = Path("gastos.csv")
+coste_gastos_fijos = 0.0
+detalle_gastos = []
 
-coste_rrhh = row_rrhh.iloc[0]["rrhh_total_eur"]
+if GASTOS_FILE.exists():
+    df_gastos = pd.read_csv(GASTOS_FILE)
 
-# =====================================================
-# COSTES FIJOS · GASTOS
-# =====================================================
-if not GASTOS_FILE.exists():
-    st.error("No existen gastos registrados.")
-    st.stop()
+    df_gastos["Fecha"] = pd.to_datetime(
+        df_gastos["Fecha"],
+        dayfirst=True,
+        errors="coerce"
+    )
 
-df_gastos = pd.read_csv(GASTOS_FILE)
+    df_gastos = df_gastos[
+        df_gastos["Fecha"].dt.year == anio_sel
+    ]
 
-gastos_fijos = df_gastos[
-    (df_gastos["Tipo_Gasto"] == "Fijo") &
-    (df_gastos["Rol_Gasto"] == "Estructural")
-]
+    if mes_sel != 0:
+        df_gastos = df_gastos[
+            df_gastos["Fecha"].dt.month == mes_sel
+        ]
 
-gastos_por_categoria = (
-    gastos_fijos
-    .groupby("Categoria")["Coste (€)"]
-    .sum()
-    .reset_index()
-)
+    # Aquí asumimos que la clasificación estructural
+    # ya está correctamente definida en el módulo Gastos
+    df_fijos = df_gastos[
+        df_gastos["Tipo"] == "Fijo"
+    ] if "Tipo" in df_gastos.columns else df_gastos
 
-total_gastos_fijos = gastos_por_categoria["Coste (€)"].sum()
+    coste_gastos_fijos = df_fijos["Coste (€)"].sum()
 
-# =====================================================
-# COSTES FIJOS TOTALES
-# =====================================================
-costes_fijos_totales = coste_rrhh + total_gastos_fijos
+    detalle_gastos = (
+        df_fijos
+        .groupby("Categoria")["Coste (€)"]
+        .sum()
+        .reset_index()
+    )
 
-st.markdown("### Costes fijos estructurales")
+# -----------------------------------------------------
+# TOTAL COSTES FIJOS
+# -----------------------------------------------------
+total_costes_fijos = coste_rrhh + coste_gastos_fijos
 
 st.metric(
     "Total costes fijos",
-    f"{costes_fijos_totales:,.2f} €"
+    f"{total_costes_fijos:,.2f} €",
+    help="Incluye RRHH + gastos fijos estructurales"
 )
 
-st.caption("Incluye RRHH + gastos fijos estructurales")
+# -----------------------------------------------------
+# DESGLOSE
+# -----------------------------------------------------
+st.markdown("#### Desglose de costes fijos")
 
-st.divider()
+desglose = [
+    {"Concepto": "Recursos Humanos", "Coste (€)": round(coste_rrhh, 2)}
+]
 
-# =====================================================
-# DESGLOSE AUDITABLE
-# =====================================================
-st.markdown("### Desglose de costes fijos")
+for _, row in detalle_gastos.iterrows():
+    desglose.append({
+        "Concepto": row["Categoria"],
+        "Coste (€)": round(row["Coste (€)"], 2)
+    })
+
+df_desglose = pd.DataFrame(desglose)
 
 st.dataframe(
-    pd.concat([
-        pd.DataFrame([{
-            "Concepto": "Recursos Humanos",
-            "Coste (€)": coste_rrhh
-        }]),
-        gastos_por_categoria.rename(
-            columns={
-                "Categoria": "Concepto",
-                "Coste (€)": "Coste (€)"
-            }
-        )
-    ]),
+    df_desglose,
     hide_index=True,
     use_container_width=True
 )
 
+# =====================================================
+# PUNTO DE EQUILIBRIO
+# =====================================================
 st.divider()
-
-# =====================================================
-# BREAKEVEN
-# =====================================================
-breakeven = costes_fijos_totales / margen_bruto
-
 st.markdown("### Punto de equilibrio")
+
+breakeven = total_costes_fijos / margen_bruto
 
 st.metric(
     "Breakeven (sin IVA)",
