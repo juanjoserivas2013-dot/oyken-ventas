@@ -90,7 +90,7 @@ if mes_sel == 0:  # Todos los meses
     ]
 
 else:
-    mes_num = int(mes_sel)
+    mes_num = (mes_sel)
 
     row_compras = df_compras[
         (df_compras["anio"] == int(anio_sel)) &
